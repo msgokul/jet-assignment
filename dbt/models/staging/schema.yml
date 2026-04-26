@@ -1,0 +1,32 @@
+version: 2
+models:
+  - name: stg_xkcd_comics
+    description: "Staging model for raw xkcd comics data"
+    columns:
+      - name: comic_id
+        description: "Unique identifier for each comic"
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Title of the comic"
+        tests:
+          - not_null
+      - name: safe_title
+        description: "Safe title for the comic"
+      - name: img_url
+        description: "URL of the comic image"
+      - name: alt_text
+        description: "Alternative text for the comic"
+      - name: transcript
+        description: "Transcript of the comic"
+      - name: published_year
+        description: "Year of publication"
+      - name: published_month
+        description: "Month of publication"
+      - name: published_day
+        description: "Day of publication"
+      - name: published_date
+        description: "Publication date of the comic"
+      - name: inserted_at
+        description: "Timestamp when the record was inserted"

@@ -1,0 +1,19 @@
+name: 'dbt_xkcd'
+version: '1.0.0'
+config-version: 2
+profile: 'dbt_xkcd_profile'
+
+model-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+clean-targets: ["target", "dbt_packages"]
+
+on-run-start: "{{ log('Starting dbt run for XKCD project', info=True) }}"
+on-run-end: "{{ log('Completed dbt run for XKCD project', info=True) }}"
+
+models:
+  dbt_xkcd:
+    staging:
+      +materialized: "view"
+    marts:
+      +materialized: "table"

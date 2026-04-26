@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Airflow
+logs/
+*.log
+airflow.db
+
+# dbt
+target/
+dbt_packages/
+*.msgpack
+
+# Environment
+.env
+.venv
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+

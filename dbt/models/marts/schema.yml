@@ -1,0 +1,121 @@
+version: 2
+
+models:
+  - name: dim_comics
+    description: "Dimension table for xkcd comics"
+    columns:
+      - name: comic_id
+        description: "Unique identifier for each comic"
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Title of the comic"
+        tests:
+          - not_null
+      - name: safe_title
+        description: "Safe title for the comic"
+      - name: img_url
+        description: "URL of the comic image"
+      - name: alt_text
+        description: "Alternative text for the comic"
+      - name: transcript
+        description: "Transcript of the comic"
+      - name: published_date
+        description: "Publication date of the comic"
+        tests:
+          - not_null
+      - name: title_letter_count
+        description: "Number of letters in the comic title"
+        tests:
+          - not_null
+      - name: inserted_at
+        description: "Timestamp when the record was inserted"
+        tests:
+          - not_null
+
+  - name: dim_date
+    description: "Dimension table for dates"
+    columns:
+      - name: date_key
+        description: "Primary key for the date dimension in YYYYMMDD format"
+        tests:
+          - unique
+          - not_null
+      - name: published_date
+        description: "Date in YYYY-MM-DD format"
+        tests:
+          - unique
+          - not_null
+      - name: published_year
+        description: "Year part of the date"
+        tests:
+          - not_null
+      - name: published_month
+        description: "Month part of the date"
+        tests:
+          - not_null
+      - name: published_day
+        description: "Day part of the date"
+        tests:
+          - not_null
+      - name: day_of_week
+        description: "Numeric day of week (0=Sunday, 6=Saturday)"
+        tests:
+          - not_null
+      - name: quarter
+        description: "Quarter of the year (e.g., Q1, Q2)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Q1', 'Q2', 'Q3', 'Q4']
+      - name: day_name
+        description: "Name of the day (e.g., Monday, Tuesday)"
+        tests:
+          - not_null
+      - name: day_of_year
+        description: "Day of the year (1-365/366)"
+        tests:
+          - not_null
+      - name: is_weekend
+        description: "Indicates if the date falls on a weekend"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [True, False]
+
+
+  - name: fact_xkcd_comics
+    description: "Fact table for xkcd comics with foreign keys to dimensions"
+    columns:
+      - name: fact_id
+        description: "Primary key for the fact table"
+        tests:
+          - unique
+          - not_null
+      - name: comic_id
+        description: "Unique identifier for each comic (foreign key to dim_comics)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_comics')
+              field: comic_id
+      - name: date_key
+        description: "Foreign key to dim_date"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: cost_euros
+        description: "Cost of the comic in Euros"
+        tests:
+          - not_null
+      - name: views
+        description: "Number of views for the comic"
+        tests:
+          - not_null
+      - name: reviews
+        description: "Number of reviews for the comic"
+        tests:
+          - not_null

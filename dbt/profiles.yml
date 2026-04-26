@@ -1,0 +1,12 @@
+dbt_xkcd_profile:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres
+      port: 5432
+      user: xkcd_user
+      password: xkcd_pass
+      dbname: xkcd_db
+      schema: public
+      threads: 4
