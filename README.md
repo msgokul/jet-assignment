@@ -139,12 +139,12 @@ The DAG `xkcd_dag` starts paused. Unpause it in the UI and trigger a run. On fir
 Models are split into staging and marts:
 
 **Staging**
-- `stg_xkcd_comics` — clean view on top of raw table, renames columns and builds a proper date
+- `stg_xkcd_comics` - clean view on top of raw table, renames columns and builds a proper date
 
 **Marts**
-- `dim_comics` — comic attributes + title letter count
-- `dim_date` — date dimension with calendar attributes
-- `fact_xkcd_comics` — metrics (cost, views, reviews) with FKs to both dims
+- `dim_comics` - comic attributes + title letter count
+- `dim_date` - date dimension with calendar attributes
+- `fact_xkcd_comics` - metrics (cost, views, reviews) with FKs to both dims
 
 ## 7. Data Quality checks
 
