@@ -1,3 +1,5 @@
+from urllib import response
+
 import pandas as pd 
 import requests
 import logging
@@ -55,7 +57,22 @@ class ELT:
             processed_df[col] = processed_df[col].astype(int)
 
         return processed_df
+    
+    def check_comic_availability(self, response):
+        """Standalone response check for the Airflow HttpSensor."""
+        try:
+            log.info("Checking for new comic availability...")
+            data = response.json()
+            today = datetime.now()
         
+            return (int(data["year"]) == today.year and 
+                    int(data["month"]) == today.month and
+                    int(data["day"]) == today.day)
+
+        except Exception as e:
+            log.error("Polling check failed: %s", e)
+            return False
+    
     def extract_and_load(self):
         """Fetch the latest comic and load it into the DB."""
         response = requests.get(self.__BASE_URL, timeout=30)
@@ -145,12 +162,12 @@ def check_comic_availability(response):
         log.error("Polling check failed: %s", e)
         return False
     
-def extract_and_load_data_method():
-    """Wrapper so Airflow can call it without instantiating the class in the DAG file."""
-    elt = ELT()
-    return elt.extract_and_load()
+# def extract_and_load_data_method():
+#     """Wrapper so Airflow can call it without instantiating the class in the DAG file."""
+#     elt = ELT()
+#     return elt.extract_and_load()
 
-def ensure_historical_data_method():
-    """Wrapper so Airflow can run the backfill check as a task."""
-    elt = ELT()
-    return elt.ensure_historical_data()
+# def ensure_historical_data_method():
+#     """Wrapper so Airflow can run the backfill check as a task."""
+#     elt = ELT()
+#     return elt.ensure_historical_data()

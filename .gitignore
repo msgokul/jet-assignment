@@ -14,10 +14,6 @@ target/
 dbt_packages/
 *.msgpack
 
-# Environment
-.env
-.venv
-
 # IDE
 .vscode/
 .idea/

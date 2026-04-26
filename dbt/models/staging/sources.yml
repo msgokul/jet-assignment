@@ -6,8 +6,6 @@ sources:
     schema: public
     tables:
       - name: raw_xkcd_comics
-        freshness:
-          warn_after: {count: 2, period: day}
-          error_after: {count: 4, period: day}
+        description: "Raw data for xkcd comics, sourced from the xkcd API."
         loaded_at_field: inserted_at
 
