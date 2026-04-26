@@ -9,7 +9,7 @@ A production-aware data engineering project built for the JustEatTakeway.com cas
 1. [Architecture Overview](#1-architecture-overview)
 2. [Repository Strcutre](#2-repository-structure)
 3. [Data Model](#3-data-model)
-4. [Prerequisits](#4-prereuisits)
+4. [Prerequisites](#4-prerequisites)
 5. [Running the pipeline](#5-running-the-pipeline)
 6. [DBT project](#6-dbt-project)
 7. [Data Quality checks](#7-data-quality-checks)
@@ -31,14 +31,18 @@ Extraction of XKCD comics
     |
     |   - Utlising Python + requests
     v
-Preporocessing Data(pandas)
-Deduplicate>>Validate Columns>>Stripping Whitespaces>>Date Conversion
+Preporocessing Data(pandas)<---------------------------------------------------|
+Deduplicate>>Validate Columns>>Stripping Whitespaces>>Date Conversion          | 
+    |                                                                          | 
+    |                                                                          | 
+    v                                                                          | 
+Load to PostgreSQL (raw_xkcd_comics)                                           | 
+    |                                                                          | 
+    |                                                                          | 
+    v                                                                          | 
+Polling for new comic   --------------------------------------------------------
     |
-    |
-    v
-Load to PostgreSQL (raw_xkcd_comics)
-    |
-    |
+    |   - Using built in HTTPSensor that check every 1 hour
     v
 DBT Transformation
     |
@@ -49,59 +53,73 @@ DBT Transformation
     |
     v
 Data Quality Tests
+    - Singular and Generic tests in dbt
 ```
 
 ## 2. Repository Strcutre
 
 ```
 .
-├── dags/
-│   └── xkcd_dag.py              # Airflow DAG definition
-├── dbt/
-│   ├── models/
-│   │   ├── staging/             # Staging views
-│   │   └── marts/               # Dimensional models
-│   └── tests/                   # Custom data quality tests
-├── scripts/
-│   ├── init-airflow-db.sql      # Postgres init script
-│   └── backfill_xkcd.py         # Manual backfill script
-├── src/
-│   ├── elt_code.py              # Extract & load logic
-│   ├── db_utils.py              # DB connection & insert helper
-│   └── secrets_manager.py       # DB credentials
-├── docker-compose.yaml          # All services
-└── README.md
+|--- dags/
+│   |--- xkcd_dag.py              # Airflow DAG definition
+|--- dbt/
+│   |--- models/
+│   │   |---staging/             # Staging views
+|   |   |   |---stg_xkcd_comics.sql # Staging model
+|   |   |   |---schema.yml          #Model description and Generic test implemented
+|   |   |   |---sources.yml         #registering the source data
+│   │   |--- marts/               # Dimensional models
+|   |   |    |--- dim_comics.sql  # Dimension model for comic details
+|   |   |    |--- dim_date.sql    # Dimension model for date details
+|   |   |    |--- fact_xkcd_comics.sql #Fact table containing metrics
+|   |   |    |--- schema.yml      #Model descripition and generic test
+│   |---tests/                   # Singular tests for data quality
+|   |   |---assert_cost_equals_letter_count_times_rate.sql  
+|   |   |---assert_no_future_date.sql  
+|   |   |---asert_review_in_range.sql  
+|   |   |---assert_views_in_range.sql  
+|--- scripts/
+│   |--- init-airflow-db.sql      # Postgres init script
+|--- src/
+│   |--- elt_code.py              # Extract & load logic
+│   |--- db_utils.py              # DB connection & insert helper
+│   |--- secrets_manager.py       # DB credentials
+|--- docker-compose.yaml          # All services
+|--- README.md
 ```
 
 ## 3. Data Model
 
 Kimball-style star schema with 2 dimensions and 1 fact table:
 
-**dim_comics** — one row per comic
+**dim_comics** - one row per comic
 - comic_id (PK)
 - title, safe_title, img_url, alt_text, transcript
 - published_date
 - title_letter_count (used for cost calculation)
 
-**dim_date** — one row per publication date
+**dim_date** - one row per publication date
 - date_key (PK, YYYYMMDD)
 - published_date, published_year, published_month, published_day
 - day_of_week, quarter, day_name, day_of_year, is_weekend
 
-**fact_xkcd_comics** — one row per comic, foreign keys to both dims
+**fact_xkcd_comics** - one row per comic, foreign keys to both dims
 - fact_id (PK)
-- comic_id (FK → dim_comics)
-- date_key (FK → dim_date)
+- comic_id (FK -> dim_comics)
+- date_key (FK -> dim_date)
 - cost_euros (letters * 5)
-- views (random 0–10000)
-- reviews (random 1.0–10.0)
+- views (random 0-10000)
+- reviews (random 1.0-10.0)
 
-## 4. Prereuisits
+## 4. Prerequisites
 
 - Docker
 - Docker Compose
+- Python
+- Postgres
+- DBT
+- Apache Airflow
 
-That's it. Everything else (Airflow, Postgres, DBT, Python deps) is in the containers.
 
 ## 5. Running the pipeline
 
@@ -116,11 +134,6 @@ docker-compose up -d
 
 The DAG `xkcd_dag` starts paused. Unpause it in the UI and trigger a run. On first run it will detect that `raw_xkcd_comics` is empty and backfill all historical comics automatically. Subsequent runs just fetch the latest comic.
 
-If you want to force a manual backfill:
-```bash
-python scripts/backfill_xkcd.py
-```
-
 ## 6. DBT project
 
 Models are split into staging and marts:
@@ -133,13 +146,6 @@ Models are split into staging and marts:
 - `dim_date` — date dimension with calendar attributes
 - `fact_xkcd_comics` — metrics (cost, views, reviews) with FKs to both dims
 
-Run manually:
-```bash
-cd dbt
-dbt run --profiles-dir .
-dbt test --profiles-dir .
-```
-
 ## 7. Data Quality checks
 
 **Built-in DBT tests:**
@@ -148,25 +154,19 @@ dbt test --profiles-dir .
 - accepted_values for quarter, is_weekend
 
 **Custom tests:**
-- `assert_cost_equals_letter_count_times_rate` — verifies cost = letters * 5
-- `assert_no_future_date` — no comics with published_date > today
-- `assert_reviews_in_range` — reviews between 1.0 and 10.0
-- `assert_views_in_range` — views between 0 and 10000
-
-**Source freshness:**
-- Configured on `raw_xkcd_comics` to warn if data is older than 2 days
+- `assert_cost_equals_letter_count_times_rate` -- verifies cost = letters * 5
+- `assert_no_future_date` -- no comics with published_date > today
+- `assert_reviews_in_range` -- reviews between 1.0 and 10.0
+- `assert_views_in_range` -- views between 0 and 10000
 
 ## 8. Preprocessing Layer
 
 All preprocessing happens in `src/elt_code.py` before loading:
 
-1. **Deduplicate** — drop duplicates on `num` (comic ID)
-2. **Validate columns** — ensure expected columns exist, drop unexpected ones
-3. **Strip whitespace** — clean text fields, convert empty strings to None
-4. **Type conversion** — cast day/month/year to integers
-5. **Insert** — upsert into Postgres with `ON CONFLICT DO NOTHING`
-
-The backfill uses `ThreadPoolExecutor` with 10 workers to speed up the initial historical load.
+1. **Deduplicate** - drop duplicates on `num` (comic ID)
+2. **Validate columns** - ensure expected columns exist, drop unexpected ones
+3. **Strip whitespace** - clean text fields, convert empty strings to None
+4. **Type conversion** - cast day/month/year to integers
 
 ## 9. Airflow DAG
 
@@ -188,9 +188,9 @@ dbt_run
 dbt_test
 ```
 
-- **ensure_historical_data** — checks if raw table has data; if empty, backfills everything
-- **wait_for_new_comic** — polls the API every 10 mins to check if today's comic is published
-- **extract_and_load_data** — fetches the latest comic and loads to Postgres
-- **dbt_run** — builds all models
-- **dbt_test** — runs all data quality tests
+- **ensure_historical_data** - checks if raw table has data; if empty, backfills everything
+- **wait_for_new_comic** - polls the API every 1 hour to check if today's comic is published
+- **extract_and_load_data** - fetches the latest comic and loads to Postgres
+- **dbt_run** - builds all models
+- **dbt_test**- runs all data quality tests
 
