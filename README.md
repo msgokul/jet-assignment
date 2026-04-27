@@ -134,6 +134,13 @@ docker-compose up -d
 
 The DAG `xkcd_dag` starts paused. Unpause it in the UI and trigger a run. On first run it will detect that `raw_xkcd_comics` is empty and backfill all historical comics automatically. Subsequent runs just fetch the latest comic.
 
+To view the data models in pgAdmin go to http://localhost:5050.
+```
+Under General -> Name: postgres
+Under Connection -> Host name: postgres; Port: 5432; database: postgres
+                    Username:postgres; password: postgres
+```
+
 ## 6. DBT project
 
 Models are split into staging and marts:
