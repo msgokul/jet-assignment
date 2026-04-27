@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine, inspect, MetaData, Table, Column, Integer, String, Text, TIMESTAMP, text
 from sqlalchemy.dialects.postgresql import insert
-import pandas as pd
 import logging
 from src.secrets_manager import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
@@ -59,6 +58,17 @@ class DBLoader:
         if not insp.has_table(self.__table_name):
             self.__table.create(self.__engine)
             log.info("Created table: %s", self.__table_name)
+    
+    def get_latest_comic_num_in_db(self):
+        """Helper to get the latest comic number already in the database."""
+        try:
+            with self.__engine.connect() as conn:
+                result = conn.execute(text(f"SELECT MAX(num) FROM {self.__table_name}"))
+                latest_num = result.scalar()
+                return latest_num if latest_num is not None else 0
+        except Exception as e:
+            log.error("Failed to fetch latest comic number from DB: %s", e)
+            return 0
     
     def insert_data(self, data):
         """Insert data into the database."""
