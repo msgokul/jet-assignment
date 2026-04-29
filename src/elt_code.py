@@ -78,12 +78,12 @@ class ELT:
         comic = response.json()
 
         # If missing comics detected, backfill before processing the latest comic to avoid gaps in the data.
-        if int(response["num"])-1 != self.__db_util.get_latest_comic_num_in_db():
-            missing_comics = int(response["num"]) - self.__db_util.get_latest_comic_num_in_db()
+        if int(comic["num"])-1 != self.__db_util.get_latest_comic_num_in_db():
+            missing_comics = int(comic["num"]) - self.__db_util.get_latest_comic_num_in_db()
             if missing_comics > 0:
                 # Get the missing comics in parallel to fill the gap
                 log.info("Detected %s missing comic(s). Backfilling...", missing_comics)
-                self.backfill_historical_comics(start_num=self.__db_util.get_latest_comic_num_in_db()+1, end_num=int(response["num"])-1)
+                self.backfill_historical_comics(start_num=self.__db_util.get_latest_comic_num_in_db()+1, end_num=int(comic["num"])-1)
             else:
                 log.info("No missing comics detected. Proceeding with the latest comic.")
 
